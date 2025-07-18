@@ -17,8 +17,7 @@ return [
         'path' => '/',
         'domain' => '',
         'encrypt' => true
-    ],
-    'refresh_remaining' => 120 // In seconds
+    ]
 ];
 ```
 
@@ -29,7 +28,6 @@ return [
 - `refresh_cookie.path`: Path of the refresh cookie
 - `refresh_cookie.domain`: Domain of the refresh cookie
 - `refresh_cookie.encrypt`: Whether to encrypt the refresh token before saving it to the cookie (recommended)
-- `refresh_remaining`: Maximum time remaining (in seconds) before refreshing the access token
 
 ## Add to container
 

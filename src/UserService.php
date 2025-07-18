@@ -75,20 +75,18 @@ class UserService extends Service
     /**
      * Login user.
      *
-     * - Set user session
-     * - Create refresh cookie, if required
-     * - Do user.login event, if required
+     * - Set user data to session
+     * - Create refresh cookie if refresh token exists
+     * - Do user.login event
      *
      * @param string $user_id
      * @param string $access_token
-     * @param int $expiration
-     * @param string $refresh_token
-     * @param bool $remember
-     * @param bool $do_event (Do user.login event?)
+     * @param int $expiration (Expiration timestamp. 0 to not expire)
+     * @param string $refresh_token (If defined, will be saved to a refresh cookie)
      * @return void
      * @throws UserServiceException
      */
-    public function login(string $user_id, string $access_token, int $expiration = 0, string $refresh_token = '', bool $remember = false, bool $do_event = true): void
+    public function login(string $user_id, string $access_token = '', int $expiration = 0, string $refresh_token = ''): void
     {
 
         $this->session->set('user', [
@@ -112,17 +110,11 @@ class UserService extends Service
 
             }
 
-            $this->session->set('user.refresh_token', $refresh_token);
-
-            if ($remember === true) {
-                Cookie::set($this->getConfig('refresh_cookie.name', 'user_refresh'), $refresh_token, $this->getConfig('refresh_cookie.duration', 10080), $this->getConfig('refresh_cookie.path', '/'), $this->getConfig('refresh_cookie.domain', ''));
-            }
+            Cookie::set($this->getConfig('refresh_cookie.name', 'user_refresh'), $refresh_token, $this->getConfig('refresh_cookie.duration', 10080), $this->getConfig('refresh_cookie.path', '/'), $this->getConfig('refresh_cookie.domain', ''));
 
         }
 
-        if ($do_event === true) {
-            $this->events->doEvent('user.login', $user_id);
-        }
+        $this->events->doEvent('user.login', $user_id, $expiration);
 
     }
 
@@ -149,7 +141,30 @@ class UserService extends Service
     }
 
     /**
+     * Is user session valid?
+     *
+     * Checks for user ID and expiration.
+     *
+     * @return bool
+     */
+    private function sessionIsValid(): bool
+    {
+
+        $expiration = $this->getAccessTokenExpiration();
+
+        if (($expiration > 0 && $expiration <= time())
+            || $this->getId() === null) {
+            return false;
+        }
+
+        return true;
+
+    }
+
+    /**
      * Is user logged in?
+     *
+     * Checks for user ID and expiration.
      *
      * If not, will trigger the user.refresh event once and reattempt.
      *
@@ -158,27 +173,15 @@ class UserService extends Service
     public function isLoggedIn(): bool
     {
 
-        $expiration = $this->session->get('user.access_token.expiration');
-
-        /*
-         * Refresh if session does not exist or is nearing expiration
-         */
-
-        if ($expiration === null
-            || ((int)$expiration > 0 && (int)$expiration <= time() - (int)$this->getConfig('refresh_remaining', 120))) {
-            $this->refresh();
+        if ($this->sessionIsValid()) {
+            return true;
         }
 
-        $expiration = $this->session->get('user.access_token.expiration');
+        // Refresh once if needed
 
-        // Refresh if expired
-        if ($expiration === null || ((int)$expiration > 0 && (int)$expiration <= time())) {
-            return false;
-        }
+        $this->refresh();
 
-        // Check session
-
-        return $this->session->has('user');
+        return $this->sessionIsValid();
 
     }
 
@@ -192,13 +195,7 @@ class UserService extends Service
 
         // Get refresh token, if existing
 
-        $remember = true;
         $refresh_token = Cookie::get($this->getConfig('refresh_cookie.name', 'user_refresh'));
-
-        if ($refresh_token === null) {
-            $remember = false;
-            $refresh_token = $this->session->get('user.refresh_token');
-        }
 
         if (!is_string($refresh_token)) {
             return;
@@ -206,7 +203,7 @@ class UserService extends Service
 
         // Decrypt refresh token, if needed
 
-        if ($remember === true && $this->getConfig('refresh_cookie.encrypt', true) === true) {
+        if ($this->getConfig('refresh_cookie.encrypt', true) === true) {
 
             try {
                 $encryptor = new Encryptor(App::getEnv('APP_KEY', ''));
@@ -214,7 +211,8 @@ class UserService extends Service
             } catch (InvalidCipherException|DecryptException) {
 
                 /*
-                 * May wish to throw UserServiceException, as is done in the login method
+                 * May wish to throw UserServiceException, as is done in the login method.
+                 * This fails silently so as not to throw an exception when checking if logged in.
                  */
 
                 return;
@@ -223,7 +221,7 @@ class UserService extends Service
 
         }
 
-        $this->events->doEvent('user.refresh', $refresh_token, $remember);
+        $this->events->doEvent('user.refresh', $refresh_token);
 
     }
 
