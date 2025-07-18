@@ -201,7 +201,7 @@ class UserService extends Service
         $refresh_token = $this->session->get('user.refresh_token', '');
 
         if ($refresh_token !== '') {
-            $this->events->doEvent('user.refresh', $refresh_token);
+            $this->events->doEvent('user.refresh', $refresh_token, false);
             return;
         }
 
@@ -233,7 +233,7 @@ class UserService extends Service
 
         }
 
-        $this->events->doEvent('user.refresh', $refresh_token);
+        $this->events->doEvent('user.refresh', $refresh_token, true);
 
     }
 
