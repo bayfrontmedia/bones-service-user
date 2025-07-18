@@ -59,6 +59,7 @@ Login user.
 - `$access_token = ''` (string)
 - `$expiration = 0` (int)
 - `$refresh_token = ''` (string)
+- `$remember = false` (bool): If true, refresh cookie will be saved
 
 **Returns**
 
@@ -108,7 +109,7 @@ If not, will trigger the `user.refresh` event once and reattempt.
 
 **Description**
 
-Trigger the `user.refresh` event if a refresh cookie is found.
+Trigger the `user.refresh` event if a refresh cookie is found in the current session or in a refresh cookie.
 
 **Parameters**
 

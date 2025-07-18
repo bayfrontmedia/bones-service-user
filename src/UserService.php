@@ -82,11 +82,12 @@ class UserService extends Service
      * @param string $user_id
      * @param string $access_token
      * @param int $expiration (Expiration timestamp. 0 to not expire)
-     * @param string $refresh_token (If defined, will be saved to a refresh cookie)
+     * @param string $refresh_token
+     * @param bool $remember (If true, refresh cookie will be saved)
      * @return void
      * @throws UserServiceException
      */
-    public function login(string $user_id, string $access_token = '', int $expiration = 0, string $refresh_token = ''): void
+    public function login(string $user_id, string $access_token = '', int $expiration = 0, string $refresh_token = '', bool $remember = false): void
     {
 
         $this->session->set('user', [
@@ -94,10 +95,11 @@ class UserService extends Service
             'access_token' => [
                 'value' => $access_token,
                 'expiration' => $expiration
-            ]
+            ],
+            'refresh_token' => $refresh_token
         ]);
 
-        if ($refresh_token !== '') {
+        if ($refresh_token !== '' && $remember === true) {
 
             if ($this->getConfig('refresh_cookie.encrypt', true) === true) {
 
@@ -186,14 +188,24 @@ class UserService extends Service
     }
 
     /**
-     * Trigger the user.refresh event if a refresh cookie is found.
+     * Trigger the user.refresh event if a refresh cookie is found
+     * in the current session or in a refresh cookie.
      *
      * @return void
      */
     public function refresh(): void
     {
 
-        // Get refresh token, if existing
+        // Get refresh token from session, if existing
+
+        $refresh_token = $this->session->get('user.refresh_token', '');
+
+        if ($refresh_token !== '') {
+            $this->events->doEvent('user.refresh', $refresh_token);
+            return;
+        }
+
+        // Get refresh token from cookie, if existing
 
         $refresh_token = Cookie::get($this->getConfig('refresh_cookie.name', 'user_refresh'));
 
