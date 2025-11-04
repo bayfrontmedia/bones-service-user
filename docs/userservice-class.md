@@ -49,22 +49,25 @@ Get user configuration value in dot notation.
 
 Login user.
 
-- Set user session
-- Create refresh cookie, if required
-- Do `user.login` event, if required
+- Set user data to session
+- Create refresh cookie if refresh token exists
+- Do `user.login` event
 
 **Parameters**
 
 - `$user_id` (string)
-- `$access_token` (string)
+- `$access_token = ''` (string)
 - `$expiration = 0` (int)
 - `$refresh_token = ''` (string)
-- `$remember = false` (bool)
-- `$do_event = true` (bool)
+- `$remember = false` (bool): If true, refresh cookie will be saved
 
 **Returns**
 
 - (void)
+
+**Throws**
+
+- `\Bayfront\BonesService\User\Exceptions\UserServiceException`
 
 ## logout
 
@@ -90,6 +93,8 @@ Logout user.
 
 Is user logged in?
 
+Checks for user ID and expiration.
+
 If not, will trigger the `user.refresh` event once and reattempt.
 
 **Parameters**
@@ -104,7 +109,7 @@ If not, will trigger the `user.refresh` event once and reattempt.
 
 **Description**
 
-Trigger the `user.refresh` event if a refresh cookie is found.
+Trigger the `user.refresh` event if a refresh cookie is found in the current session or in a refresh cookie.
 
 **Parameters**
 
