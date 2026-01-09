@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities
 
+## [1.1.1] - 2026.01.08
+
+### Updated
+
+- Updated cookies to ensure they are removed in the same manner they are set.
+
 ## [1.1.0] - 2025.11.04
 
 ### Changed
