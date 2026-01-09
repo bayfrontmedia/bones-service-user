@@ -132,9 +132,10 @@ class UserService extends Service
      */
     public function logout(bool $do_event = true): void
     {
+
         $id = $this->getId();
-        $this->session->startNew();
         Cookie::forget($this->getConfig('refresh_cookie.name', 'user_refresh'), $this->getConfig('refresh_cookie.path', '/'));
+        $this->session->startNew();
 
         if ($do_event === true) {
             $this->events->doEvent('user.logout', $id);
